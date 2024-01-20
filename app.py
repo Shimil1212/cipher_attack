@@ -3,85 +3,57 @@ import pickle
 from scapy.all import IP, TCP
 import numpy as np
 
+# Load the pre-trained model
 with open("rf_1.pkl", "rb") as file:
     model = pickle.load(file)
 
+# Function to make predictions
+def make_prediction(protocol_type, service, flag, src_bytes, dst_bytes, land, wrong_fragment, urgent,
+                    hot, num_failed_logins, logged_in, num_compromised, root_shell, su_attempted,
+                    num_file_creations, num_shells, num_access_files, num_outbound_cmds,
+                    is_host_login, is_guest_login, count, srv_count, serror_rate, rerror_rate,
+                    same_srv_rate, diff_srv_rate, srv_diff_host_rate, dst_host_count,
+                    dst_host_srv_count, dst_host_same_srv_rate, dst_host_diff_srv_rate,
+                    dst_host_same_src_port_rate, dst_host_srv_diff_host_rate):
 
-
-
-def prediction_(protocol_type, service, flag, src_bytes, dst_bytes, land, wrong_fragment, urgent,
-                hot, num_failed_logins, logged_in, num_compromised, root_shell, su_attempted,
-                num_file_creations, num_shells, num_access_files, num_outbound_cmds,
-                is_host_login, is_guest_login, count, srv_count, serror_rate, rerror_rate,
+    # Create a feature array
+    features = [protocol_type, service, flag, src_bytes, dst_bytes, land,
+                wrong_fragment, urgent, hot, num_failed_logins, logged_in,
+                num_compromised, root_shell, su_attempted, num_file_creations,
+                num_shells, num_access_files, num_outbound_cmds, is_host_login,
+                is_guest_login, count, srv_count, serror_rate, rerror_rate,
                 same_srv_rate, diff_srv_rate, srv_diff_host_rate, dst_host_count,
                 dst_host_srv_count, dst_host_same_srv_rate, dst_host_diff_srv_rate,
-                dst_host_same_src_port_rate, dst_host_srv_diff_host_rate):
-
-    features=[ protocol_type, service,flag, src_bytes,dst_bytes, land,
-        wrong_fragment, urgent, hot, num_failed_logins, logged_in,
-        num_compromised, root_shell, su_attempted, num_file_creations,
-        num_shells, num_access_files, num_outbound_cmds, is_host_login,
-        is_guest_login,count, srv_count, serror_rate, rerror_rate,
-        same_srv_rate, diff_srv_rate, srv_diff_host_rate,dst_host_same_srv_rate,
-        dst_host_count, dst_host_srv_count, dst_host_diff_srv_rate,
-        dst_host_same_src_port_rate, dst_host_srv_diff_host_rate]
-    len(features)
+                dst_host_same_src_port_rate, dst_host_srv_diff_host_rate]
+    
+    # Convert features to a NumPy array
     features = np.array([features]) 
-    result=model.predict(features)
-    print(result)
+
+    # Make a prediction
+    result = model.predict(features)
     return result
 
-
-
+# Create a Flask web application
 app = Flask(__name__)
+
+# Route for the home page
 @app.route('/')
 def index():
     return render_template('home.html')
 
-@app.route('/get_data', methods=['GET', 'POST'])
+# Route to handle form submission and display result
+@app.route('/get_data', methods=['POST'])
 def get_data():
     if request.method == 'POST':
-        protocol_type = request.form.get('protocol_type')
-        service = request.form.get('service')
-        flag = request.form.get('flag')
-        src_bytes = request.form.get('src_bytes')
-        dst_bytes = request.form.get('dst_bytes')
-        land = request.form.get('land')
-        wrong_fragment = request.form.get('wrong_fragment')
-        urgent = request.form.get('urgent')
-        hot = request.form.get('hot')
-        num_failed_logins = request.form.get('num_failed_logins')
-        logged_in = request.form.get('logged_in')
-        num_compromised = request.form.get('num_compromised')
-        root_shell = request.form.get('root_shell')
-        su_attempted = request.form.get('su_attempted')
-        num_file_creations = request.form.get('num_file_creations')
-        num_shells = request.form.get('num_shells')
-        num_access_files = request.form.get('num_access_files')
-        num_outbound_cmds = request.form.get('num_outbound_cmds')
-        is_host_login = request.form.get('is_host_login')
-        is_guest_login = request.form.get('is_guest_login')
-        count = request.form.get('count')
-        srv_count = request.form.get('srv_count')
-        serror_rate = request.form.get('serror_rate')
-        rerror_rate = request.form.get('rerror_rate')
-        same_srv_rate = request.form.get('same_srv_rate')
-        diff_srv_rate = request.form.get('diff_srv_rate')
-        srv_diff_host_rate = request.form.get('srv_diff_host_rate')
-        dst_host_count = request.form.get('dst_host_count')
-        dst_host_srv_count = request.form.get('dst_host_srv_count')
-        dst_host_same_srv_rate = request.form.get('dst_host_same_srv_rate')
-        dst_host_diff_srv_rate = request.form.get('dst_host_diff_srv_rate')
-        dst_host_same_src_port_rate = request.form.get('dst_host_same_src_port_rate')
-        dst_host_srv_diff_host_rate = request.form.get('dst_host_srv_diff_host_rate')
+        # Get form data
+        form_data = {field: request.form.get(field) for field in request.form}
+        
+        # Make a prediction using the form data
+        result = make_prediction(**form_data)
 
-        result=prediction_(protocol_type, service, flag, src_bytes, dst_bytes, land, wrong_fragment, urgent,
-                hot, num_failed_logins, logged_in, num_compromised, root_shell, su_attempted,
-                num_file_creations, num_shells, num_access_files, num_outbound_cmds,
-                is_host_login, is_guest_login, count, srv_count, serror_rate, rerror_rate,
-                same_srv_rate, diff_srv_rate, srv_diff_host_rate, dst_host_count,
-                dst_host_srv_count, dst_host_same_srv_rate, dst_host_diff_srv_rate,
-                dst_host_same_src_port_rate, dst_host_srv_diff_host_rate)
+        # Render the result template
         return render_template('result.html', data=result)
+
 if __name__ == '__main__':
+    # Run the Flask app in debug mode
     app.run(debug=True)
